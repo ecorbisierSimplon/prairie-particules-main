@@ -21,11 +21,19 @@ ctx.clearRect(0, 0, width, height);
 
 const radius = 20;
 const piArc = Math.PI * 2;
+const speedX = 2;
+const speedY = speedX * height / width;
 
-let x = 20;
-let y = 20;
-let speedX = 2;
-let speedY = speedX * height / width;
+const pos = [];
+for (let i = 0; i < 4; i++) {
+    let x = i % 2 === 0 ? radius : width - radius;
+    let y = i < 2 ? radius : height - radius;
+    pos.push({x: x, y:y,speedX: speedX, speedY: speedY});
+  }
+
+console.log(pos);
+
+
 // let color = "#ff0000";
 
 // RANDOM NUMBER OF COLORS (16 million) THEN CONVERT INTO HEXA
@@ -37,28 +45,26 @@ function draw() {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, width, height);
 
+    ctx.fillStyle = "#ff0000";
+
+    for (const val of pos){
+    val.x += val.speedX;
+    val.y += val.speedY;
     
-    // color = "#" + Math.floor(Math.random()*numberColors).toString(16);
-    x += speedX;
-    y += speedY;
-    
-    if (x >= width - radius || x <= radius) {
-        speedX = -speedX;
+    if (val.x >= width - radius || val.x <= radius) {
+        val.speedX = -val.speedX;
      }
-    if (y >= height - radius || y <= radius) {
-        speedY = -speedY;
+    if (val.y >= height - radius || val.y <= radius) {
+        val.speedY = -val.speedY;
     }
 
-    ctx.fillStyle = "#ff0000";
     // Calculer la direction vers la souris
-    const angle = Math.atan2(mouse.y - y, mouse.x - x);
-    x += Math.cos(angle) * speedX;
-    y += Math.sin(angle) * speedY;
+    let angle = Math.atan2(val.x - mouse.x, val.y - mouse.y );
+    val.x += Math.cos(angle) * val.speedX + val.speedX;
+    val.y += Math.sin(angle) * val.speedY + val.speedY;
 
-    arcMove(x, y);
-    arcMove(width - x, height - y);
-    arcMove(x, height - y);
-    arcMove(width - x, y);
+    arcMove(val.x, val.y);
+    }
 
     requestAnimationFrame(draw);
 }

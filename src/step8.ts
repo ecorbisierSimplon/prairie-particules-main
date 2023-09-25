@@ -38,7 +38,7 @@ canvas.addEventListener('click', (event) => {
   
 // Determine if the shape is an arc or a rectangle
 
-if (randomNumber < 1 / 3) {
+        if (randomNumber < 1 / 3) {
             // Generate random radius and angle for the current arc
             const randomRadius = Math.random() * 30 + 10;
             const randomAngle = Math.random() * Math.PI * 2;
