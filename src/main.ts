@@ -10,8 +10,8 @@ const height = window.innerHeight;
 canvas.width = width;
 canvas.height = height;
 
-// On initialise les arcs 
-// initialyze the arcs
+// On initialise les arcs principaux
+// Initializes main arcs
 const radius = 50;
 const piArc = Math.PI * 2;
 const speedX = 2;
@@ -46,10 +46,12 @@ window.addEventListener('mousemove', (event) => {
     mouse.y = event.clientY;
 });
 
+let click: boolean = false;
+
 // Evénement qui écoute le clique sur le canvas 
 // Event listening to canvas click
 canvas.addEventListener('click', (event) => {
-
+    click = true;
     const clickX = event.clientX;  // X coordinate of the click event
     const clickY = event.clientY;  // Y coordinate of the click event
 
@@ -207,50 +209,52 @@ function draw() {
 
     // We display and manage the position of the permanent arcs
     // On affiche et gère la position des arcs permanents
-    let i: number = 0; // Initialyze colision
-    let j: number = 0; // Initialyze colision
-    for (const val of pos) {
-        i++;
-        j = 0;
+    if (click===false) {
+        let i: number = 0; // Initialyze colision
+        let j: number = 0; // Initialyze colision
+        for (const val of pos) {
+            i++;
+            j = 0;
 
-        // calculates new postion based on speed
-        // Calcul de la nouvelle position selon la vitesse
-        val.x += val.speedX;
-        val.y += val.speedY;
+            // calculates new postion based on speed
+            // Calcul de la nouvelle position selon la vitesse
+            val.x += val.speedX;
+            val.y += val.speedY;
 
-        // Navigateur' window edge detectio-n
-        // Détection des bords de la fenetre du navigateur
-        if (val.x >= width - radius || val.x <= radius) {
-            val.speedX = -val.speedX;
-        }
-        if (val.y >= height - radius || val.y <= radius) {
-            val.speedY = -val.speedY;
-        }
-
-        // Detection colision
-        // We scan other objects to check their position relative to ours.
-        // On parcoure les autres objets pour vérifie leur position par rapport à la notre
-        for (const valObjet of pos) {
-            j++;
-            if (i != j) { // The object must not check with itself // L'objet ne doit pas s'auto-détecter
-                // If dectection, change direction
-                if (detectCollisionArcs(val.x, val.y, radius, valObjet.x, valObjet.y, radius)) {
-                    val.speedX = -val.speedX;
-                    val.speedY = -val.speedY;
-                }
-
+            // Navigateur' window edge detectio-n
+            // Détection des bords de la fenetre du navigateur
+            if (val.x >= width - radius || val.x <= radius) {
+                val.speedX = -val.speedX;
             }
+            if (val.y >= height - radius || val.y <= radius) {
+                val.speedY = -val.speedY;
+            }
+
+            // Detection colision
+            // We scan other objects to check their position relative to ours.
+            // On parcoure les autres objets pour vérifie leur position par rapport à la notre
+            for (const valObjet of pos) {
+                j++;
+                if (i != j) { // The object must not check with itself // L'objet ne doit pas s'auto-détecter
+                    // If dectection, change direction
+                    if (detectCollisionArcs(val.x, val.y, radius, valObjet.x, valObjet.y, radius)) {
+                        val.speedX = -val.speedX;
+                        val.speedY = -val.speedY;
+                    }
+
+                }
+            }
+
+            // calculates new direction based on mouse position
+            // Calcul nouvelle direction selon la position de la souris
+            let angle = Math.atan2(val.x - mouse.x, val.y - mouse.y);
+            val.x += Math.cos(angle) * val.speedX + val.speedX;
+            val.y += Math.sin(angle) * val.speedY + val.speedY;
+
+            // Once all the parameters have been taken into account, we draw the object
+            // une fois tous la paramètres pris en compte, on dessine l'objet
+            formDrawer.drawArc(val.x, val.y, radius, calculateColor(val.x, val.y), calculateColor(val.x, val.y), 1);
         }
-
-        // calculates new direction based on mouse position
-        // Calcul nouvelle direction selon la position de la souris
-        let angle = Math.atan2(val.x - mouse.x, val.y - mouse.y);
-        val.x += Math.cos(angle) * val.speedX + val.speedX;
-        val.y += Math.sin(angle) * val.speedY + val.speedY;
-
-        // Once all the parameters have been taken into account, we draw the object
-        // une fois tous la paramètres pris en compte, on dessine l'objet
-        formDrawer.drawArc(val.x, val.y, radius, calculateColor(val.x, val.y), calculateColor(val.x, val.y), 1);
     }
 
     // looping the animation
@@ -392,6 +396,7 @@ class StarDrawer extends FormDrawer {
             star.x += star.speedX;
             star.y += star.speedY;
             star.alpha -= star.speedAlpha;
+            // star.size += 1;
 
             if (star.alpha <= 0) {
                 star.alpha = 0;
@@ -415,7 +420,10 @@ class StarDrawer extends FormDrawer {
             // Dessine la traînée de l'étoile et met à jour son niveau d'opacité.
             this.drawStar(trailStar.x, trailStar.y, trailStar.size, trailStar.color, trailStar.spikes, trailStar.alpha);
             trailStar.alpha -= 0.01;
-
+            trailStar.size -= 0.2;
+            if (trailStar.size < 0) {
+                trailStar.size = 0;
+            }
             // Remove the trail star if its alpha is less than or equal to 0.
             // Supprime l'étoile de traînée si son niveau d'opacité est inférieur ou égal à 0.
             if (trailStar.alpha <= 0) {
@@ -467,7 +475,10 @@ class ArcDrawer extends FormDrawer {
             // Dessine la traînée de l'arc et met à jour son niveau d'opacité.
             this.drawArc(trailArc.x, trailArc.y, trailArc.radius, trailArc.color, trailArc.randomColor, trailArc.alpha);
             trailArc.alpha -= 0.01;
-
+            trailArc.radius -= 0.2;
+            if (trailArc.radius < 0) {
+                trailArc.radius = 0;
+            }
             // Remove the trail arc if its alpha is less than or equal to 0.
             // Supprime l'arc de traînée si son niveau d'opacité est inférieur ou égal à 0.
             if (trailArc.alpha <= 0) {
