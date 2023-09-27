@@ -10,8 +10,8 @@ const height = window.innerHeight;
 canvas.width = width;
 canvas.height = height;
 
-// On initialise les arcs 
-// initialyze the arcs
+// On initialise les arcs principaux
+// Initializes main arcs
 const radius = 50;
 const piArc = Math.PI * 2;
 const speedX = 2;
