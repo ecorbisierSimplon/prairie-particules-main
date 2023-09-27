@@ -24,7 +24,7 @@ const piArc = Math.PI * 2;
 const speedX = 2;
 const speedY = speedX * height / width;
 
-const pos: { x: number; y: number; speedX: number; speedY: number; }[] = [];
+const pos = [];
 for (let i = 0; i < 4; i++) {
     let x = i % 2 === 0 ? radius : width - radius;
     let y = i < 2 ? radius : height - radius;
@@ -33,9 +33,9 @@ for (let i = 0; i < 4; i++) {
 
 
 // Array to store arc information
-const arcs: any[] = [];
-const shapes: any[] = [];
-const stars: any[] = [];
+const arcs = [];
+const shapes = [];
+const stars = [];
 
 // Event listener for a click on the canvas
 canvas.addEventListener('click', (event) => {
@@ -48,7 +48,7 @@ canvas.addEventListener('click', (event) => {
     for (let i = 0; i < numForm; i++) {
         const randomNumber = Math.random();
 
-
+        const speedAlpha = Math.random() / 100;
 
         if (randomNumber < 1 / 3) {
             // Determine if the shape is an arc or a rectangle
@@ -72,7 +72,9 @@ canvas.addEventListener('click', (event) => {
                 color: arcColor,
                 randomColor: randomGradientColor,
                 speedX: (Math.random() - 0.5) * 10, // Random speed in x
-                speedY: (Math.random() - 0.5) * 10 // Random speed in y
+                speedY: (Math.random() - 0.5) * 10, // Random speed in y
+                speedAlpha: speedAlpha,
+                alpha: 1
             });
 
         } else if (randomNumber < 2 / 3) {
@@ -105,7 +107,9 @@ canvas.addEventListener('click', (event) => {
                 rotation: randomRotation,
                 rotationSpeed: rotationSpeed,
                 speedX: (Math.random() - 0.5) * 10, // Random speed in x
-                speedY: (Math.random() - 0.5) * 10 // Random speed in y
+                speedY: (Math.random() - 0.5) * 10, // Random speed in y
+                speedAlpha: speedAlpha,
+                alpha: 1
             });
         } else {
             // Generate random properties for the rectangle
@@ -128,7 +132,9 @@ canvas.addEventListener('click', (event) => {
                 color: starColor,
                 spikes: randomSpikes,
                 speedX: (Math.random() - 0.5) * 10, // Random speed in x
-                speedY: (Math.random() - 0.5) * 10 // Random speed in y
+                speedY: (Math.random() - 0.5) * 10, // Random speed in y
+                speedAlpha: speedAlpha,
+                alpha: 1
             });
         }
 
@@ -138,10 +144,10 @@ canvas.addEventListener('click', (event) => {
 
 
 function draw() {
-    const arcDrawer = new ArcDrawer(ctx);
+    const formDrawer = new FormDrawer(ctx);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    ctx.globalAlpha = 1;
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, width, height);
 
@@ -153,18 +159,20 @@ function draw() {
         const arc = arcs[i];
         arc.x += arc.speedX;
         arc.y += arc.speedY;
+        arc.alpha -= arc.speedAlpha;
+        if (arc.alpha <= 0) {
+            arc.alpha = 0;
+        }
 
-        arcDrawer.arcMove(arc.x, arc.y, arc.radius, arc.color, arc.color);
+        formDrawer.drawArc(arc.x, arc.y, arc.radius, arc.color, arc.randomColor, arc.alpha);
 
         // Remove arc from the array if it goes off-screen
-        if (arc.x + arc.radius < 0 || arc.x - arc.radius > width || arc.y + arc.radius < 0 || arc.y - arc.radius > height) {
+        if (arc.x + arc.radius < 0 || arc.x - arc.radius > width || arc.y + arc.radius < 0 || arc.y - arc.radius > height || arc.alpha <= 0) {
             arcs.splice(i, 1);
             i--;
         }
     }
 
-    // Create an instance of the RandomRectDrawer class to draw rectangles
-    const rectDrawer = new RandomRectDrawer(ctx);
 
     // Draw each rectangle and update its position
     for (let i = 0; i < shapes.length; i++) {
@@ -172,9 +180,12 @@ function draw() {
         shape.x += shape.speedX;
         shape.y += shape.speedY;
         shape.rotation += (Math.random()) * 0.1;  // Adjust the multiplier for desired rotation speed
+        shape.alpha -= shape.speedAlpha;
+        if (shape.alpha <= 0) {
+            shape.alpha = 0;
+        }
 
-
-        rectDrawer.drawRandomRect(shape.x, shape.y, shape.width, shape.height, shape.color, shape.randomColor, shape.rotation);
+        formDrawer.drawRandomRect(shape.x, shape.y, shape.width, shape.height, shape.color, shape.randomColor, shape.rotation, shape.alpha);
 
         // Restore the canvas rotation to its original state
         ctx.restore();
@@ -188,17 +199,18 @@ function draw() {
     }
 
 
-    // Create an instance of the RandomRectDrawer class to draw rectangles
-    const starsDrawer = new RandomStarDrawer(ctx);
 
     // Draw each rectangle and update its position
     for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
         star.x += star.speedX;
         star.y += star.speedY;
+        star.alpha -= star.speedAlpha;
+        if (star.alpha <= 0) {
+            star.alpha = 0;
+        }
 
-
-        starsDrawer.drawRandomStar(star.x, star.y, star.size, star.color, star.spikes);
+        formDrawer.drawRandomStar(star.x, star.y, star.size, star.color, star.spikes, star.alpha);
 
         // Restore the canvas rotation to its original state
         ctx.restore();
@@ -212,8 +224,11 @@ function draw() {
     }
 
 
-
+    let i: number = 0;
+    let j: number = 0;
     for (const val of pos) {
+        i++;
+        j=0;
         val.x += val.speedX;
         val.y += val.speedY;
 
@@ -223,120 +238,106 @@ function draw() {
         if (val.y >= height - radius || val.y <= radius) {
             val.speedY = -val.speedY;
         }
+        for (const valObjet of pos) {
+            j++;
+            if (i != j) {
+                if (Math.round(val.x) - Math.round(valObjet.x) < radius && 
+                Math.round(valObjet.x) - Math.round(val.x) < radius &&
+                Math.round(val.y) - Math.round(valObjet.y)<radius &&
+                Math.round(valObjet.y) - Math.round(val.y)<radius){
+                console.log(i + ' == ' + j);
+                val.speedX = -val.speedX;
+                val.speedY = -val.speedY;
+                }
+                // if (val.x == valObjet.x && val.y == valObjet.y) {
+
+                // }
+            }
+        }
 
         // Calculer la direction vers la souris
         let angle = Math.atan2(val.x - mouse.x, val.y - mouse.y);
         val.x += Math.cos(angle) * val.speedX + val.speedX;
         val.y += Math.sin(angle) * val.speedY + val.speedY;
 
-        arcDrawer.arcMove(val.x, val.y, radius,  calculateColor(val.x, val.y), calculateColor(val.x, val.y));
+        formDrawer.drawArc(val.x, val.y, radius, calculateColor(val.x, val.y), calculateColor(val.x, val.y), 1);
     }
 
     requestAnimationFrame(draw);
 }
-
-
-// Class to draw arcs
-class ArcDrawer {
-    private ctx: CanvasRenderingContext2D;
-    private piArc: number = Math.PI * 2;
+class FormDrawer {
+    private ctx: CanvasRenderingContext2D; // Canvas rendering context
+    private piArc: number; // Constant to store 2 * PI (full circle)
 
     constructor(ctx: CanvasRenderingContext2D) {
         this.ctx = ctx;
+        this.piArc = Math.PI * 2;
     }
 
-    // Method to draw an arc
-    public arcMove(x: number, y: number, radius: number, color: string, randomColor: string) {
+    // Draw an arc with a color gradient
+    public drawArc(x: number, y: number, radius: number, color: string, randomColor: string, alpha: number) {
         const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
-        gradient.addColorStop(0, color);  // Start color at the center
-        gradient.addColorStop(1, randomColor);    // End color at the edge
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, randomColor);
 
         this.ctx.beginPath();
+        this.ctx.globalAlpha = alpha;
         this.ctx.arc(x, y, radius, 0, this.piArc);
         this.ctx.fillStyle = gradient;
         this.ctx.fill();
     }
-}
 
-
-class RandomRectDrawer {
-    private ctx: CanvasRenderingContext2D;
-
-    constructor(ctx: CanvasRenderingContext2D) {
-        this.ctx = ctx;
-    }
-
-    // Method to draw a randomly rotated rectangle with a gradient effect
-    public drawRandomRect(x: number, y: number, width: number, height: number, color: string, gradientColor: string, angle: number) {
-        // const angle = Math.random() * Math.PI * 2; // Random angle in radians
-
-        this.ctx.save(); // Save the current state of the canvas
+    // Draw a rectangle with a color gradient and rotation
+    public drawRandomRect(x: number, y: number, width: number, height: number, color: string, gradientColor: string, angle: number, alpha: number) {
+        this.ctx.save(); // Save the current transformation state
         this.ctx.translate(x, y); // Translate to the specified position
-        this.ctx.rotate(angle); // Rotate by the random angle
-
-        // Create a linear gradient from the top to the bottom of the rectangle
+        this.ctx.rotate(angle); // Rotate by the specified angle
+        this.ctx.globalAlpha = alpha;
         const gradient = this.ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
-        gradient.addColorStop(0, color); // Start color (top of the rectangle)
-        gradient.addColorStop(1, gradientColor); // End color (bottom of the rectangle)
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, gradientColor);
 
-        // Draw the rectangle filled with the gradient
         this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(-width / 2, -height / 2, width, height);
+        this.ctx.fillRect(-width / 2, -height / 2, width, height); // Draw the rectangle
 
-        this.ctx.restore(); // Restore the saved state to undo the translation and rotation
-    }
-}
-
-
-class RandomStarDrawer {
-    private ctx: CanvasRenderingContext2D;
-
-    constructor(ctx: CanvasRenderingContext2D) {
-        this.ctx = ctx;
+        this.ctx.restore(); // Restore the previous transformation state
     }
 
-    /**
-     * Method to draw a randomly rotated star.
-     * @param x - The x-coordinate of the center of the star.
-     * @param y - The y-coordinate of the center of the star.
-     * @param size - The size of the star.
-     * @param color - The color of the star (in CSS color format).
-     * @param spikes - The number of spikes the star will have.
-     */
-    public drawRandomStar(x: number, y: number, size: number, color: string, spikes: number) {
-        // Calculate outer and inner radii for the star
+    // Draw a star with a given number of spikes
+    public drawRandomStar(x: number, y: number, size: number, color: string, spikes: number, alpha: number) {
         const outerRadius = size;
         const innerRadius = size / 2;
 
-        this.ctx.save(); // Save the current state of the canvas
+        this.ctx.save(); // Save the current transformation state
         this.ctx.translate(x, y); // Translate to the specified position
-
+        this.ctx.globalAlpha = alpha;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -outerRadius); // Move to the starting point of the star
+        this.ctx.moveTo(0, -outerRadius);
 
-        // Loop to create the spikes of the star
         for (let i = 0; i < spikes * 2; i++) {
             const radius = i % 2 === 0 ? outerRadius : innerRadius;
             const angle = (Math.PI / spikes) * i;
             const xCoordinate = radius * Math.sin(angle);
             const yCoordinate = -radius * Math.cos(angle);
-            this.ctx.lineTo(xCoordinate, yCoordinate); // Draw a line to the next point of the star
+            this.ctx.lineTo(xCoordinate, yCoordinate);
         }
 
-        this.ctx.closePath(); // Close the path to complete the star shape
-        this.ctx.fillStyle = color; // Set the fill color of the star
-        this.ctx.fill(); // Fill the star shape with the specified color
+        this.ctx.closePath();
+        this.ctx.fillStyle = color;
+        this.ctx.fill(); // Fill the star shape
 
-        this.ctx.restore(); // Restore the saved state to undo the translation
+        this.ctx.restore(); // Restore the previous transformation state
     }
 }
+
+
 
 
 // Function to calculate the color based on position
 function calculateColor(x: number, y: number): string {
     const red = Math.floor((x / width) * 255);  // Use x for the red component
     const green = Math.floor((y / height) * 255);  // Use y for the green component
-    const blue = 0;  // Blue component remains fixed at 0
+    const blue = Math.floor((((x + y) / (width + height)) / 2) * 255);  // Blue component remains fixed at 0
 
     return `rgb(${red},${green},${blue})`;
 }
